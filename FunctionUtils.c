@@ -49,7 +49,8 @@ void letturaParametriInput(int argc, char* argv[]){
 
                 if (token == NULL){
                     //TODO
-                    printf("ERRORE NON GESTITO...\n");
+                    printf("ERRORE NELL ARGOMENTO DI OUTFILE\n");
+                    exit(EXIT_FAILURE);
                 }
                 else {
                     outfilePath = token;
@@ -67,7 +68,8 @@ void letturaParametriInput(int argc, char* argv[]){
 
                 if (token == NULL){
                     //TODO
-                    printf("ERRORE NON GESTITO...\n");
+                    printf("ERRORE NELL ARGOMENTO DI ERRFILE\n");
+                    exit(EXIT_FAILURE);
                 }
                 else {
                     errfilePath = token;
@@ -94,7 +96,8 @@ void letturaParametriInput(int argc, char* argv[]){
                 }
                 else {
                     //TODO
-                    printf("ERRORE NON GESTITO (2)\n");
+                    printf("ERRORE: MAXLEN NON RICONOSCIUTA\n");
+                    exit(EXIT_FAILURE);
                     i++;
                 }
             }
@@ -110,7 +113,8 @@ void letturaParametriInput(int argc, char* argv[]){
                 }
                 else {
                     //TODO
-                    printf("ERRORE NON GESTITO (2)\n");
+                    printf("ERRORE: ARGOMENTO CODE NON RICONOSCIUTO\n");
+                    exit(EXIT_FAILURE);
                     i++;
                 }
             }
@@ -158,7 +162,8 @@ void letturaParametriInput(int argc, char* argv[]){
                 }
                 else {
                     //TODO
-                    printf("ERRORE NON GESTITO (3)\n");
+                    printf("ERRORE NEL FORMATO DI LOG \n");
+                    exit(EXIT_FAILURE);
                     i++;
                 }
             }
