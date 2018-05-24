@@ -292,7 +292,7 @@ void stampaHelp(bool errore) {
 
     strcat(str, "\tOPZIONALI:\n");
     strcat(str, "\t--maxlen=<len>\t\t\tSpecifica il massimo numero di byte scrivibili sui file di log\n");
-    strcat(str, "\t-l <len>\t\t\tSpecifica il massimo numero di byte scrivibili sui file di log\n");
+    strcat(str, "\t-m <len>\t\t\tSpecifica il massimo numero di byte scrivibili sui file di log\n");
     strcat(str, "\t--code=<true/false>\t\tSpecifica se bisogna riportare il codice di ritorno nei log\n");
     strcat(str, "\t-c <true/false>\t\t\tSpecifica se bisogna riportare il codice di ritorno nei log\n");
     strcat(str, "\t--format=<txt,csv,html>\t\tSpecifica il formato dei dati del file di log\n");
