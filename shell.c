@@ -352,7 +352,6 @@ void printOutputFileToShell(){
     char *buf = malloc(maxLength*sizeof(char));
     int buflen;
     buflen = read(fd, buf, maxLength);
-    write(1,ANSI_COLOR_CYAN,5);
     write(1, buf, buflen);
     fflush(stdout); 
     free(buf);
