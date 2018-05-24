@@ -151,9 +151,15 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
     int dimensioneFile = getFileDim(fOut);
     fseek(fOut, dimensioneFile - HTML_FILE_OFFSET, SEEK_SET);
 
+    //printf("\n\nTEST OUTPUT 1:\n%s\n\n", output);
+
     //Sostituisco tutti i \n di output in <br>
     char* tempOutput = (char*) malloc(sizeof(char) * (strlen(output) + 500));
-    int indexOutput, indexTempOutput;
+    int indexOutput, indexTempOutput, i;
+
+    for (i=0; i<strlen(output) + 500; i++)
+        tempOutput[i] = '\0';
+
     for (indexOutput=0, indexTempOutput = 0; output[indexOutput]; indexOutput++){
         if (output[indexOutput] == '\n'){
             strcat(tempOutput, "<br>");
@@ -166,7 +172,8 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
     }
     tempOutput[indexTempOutput] = '\0';
     output = tempOutput;
-    
+
+    //printf("\n\nTEST OUTPUT 2:\n%s\n%s\n", output, tempOutput);
 
     //Scrivo le statistiche sotto forma di tabella
     char *str = malloc(2048 * sizeof(char));
@@ -212,6 +219,8 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
     char strID[30];
     randString(strID, 30);
 
+    //printf("%s - %s -> %s\n", command, subcommand, strID);
+
     strcat(str, "<button type='button' class='btn btn-success' data-toggle='modal' data-target='#");
     strcat(str, strID);
     strcat(str, "'>Vedi l'output</button>");
@@ -250,11 +259,10 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
 
     free(str);
 
-    free(tempOutput);
+    free(output);
     output = NULL;
 
     fclose(fOut);
-    //printf("Ritorno alla shell\n");
     return true;
 }
 
@@ -306,7 +314,7 @@ int getFileDim(FILE* f){
     return sz;
 }
 
-void randString(char *str, size_t size) {
+void randString(char str[], size_t size) {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK1234567890";
     
     if (size) {

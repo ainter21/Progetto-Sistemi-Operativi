@@ -38,6 +38,8 @@ int fdError;    //file descriptor to handle error
 pid_t child_pid = 0;    //process is of the child
 int returnCode;     //return code of the execution of the command
 int commandId;
+int outFlag;
+int errFlag;
 
 //it get the start current working directory
 void takeStartCwd(){
@@ -144,7 +146,7 @@ void clearTmpFiles(){
     remove("/tmp/fdOutput");
 }
 
-char ***splitCommandLine(char* command){
+char ***splitCommandLineWithPipes(char* command){
 
     char ***cmd=malloc(MAXCMDNUM);
     int commandCount = 0;
@@ -183,12 +185,74 @@ char ***splitCommandLine(char* command){
 
 }
 
+//splits the command with the redirection character
+char ***splitCommandLineWithRedirection(char* command){
+
+    char ***cmd=malloc(MAXCMDNUM);
+    int commandCount = 0;
+    int wordCount = 0;
+
+    char *endLine;
+
+    char *actualCommand = strtok_r(command,">", &endLine);
+
+    while(actualCommand!=NULL){
+
+        cmd[commandCount] =malloc(MAXCMDNUM);
+        char *endCommand;
+        char *actualWord = strtok_r(actualCommand, " ", &endCommand);
+
+        while(actualWord!=NULL){
+
+            //placeholder for cd check
+            cmd[commandCount][wordCount] = malloc(MAXLENSTR * sizeof(char));
+            cmd[commandCount][wordCount] = actualWord;
+            actualWord = strtok_r(NULL," ", &endCommand);
+
+            wordCount++;
+        }
+        cmd[commandCount][wordCount] = malloc(MAXLENSTR * sizeof(char));
+        cmd[commandCount][wordCount] = NULL;
+        commandCount++;
+        actualCommand = strtok_r(NULL,">", &endLine);
+        wordCount=0;
+        
+    }
+    cmd[commandCount] = malloc(MAXCMDNUM);
+    cmd[commandCount]  = NULL;
+
+    return cmd;
+
+}
+
+
+//splitcommand without redirection
+char **splitCommandLineNoRedirection(char *command){
+    
+    char **cmd=malloc(MAXCMDNUM);
+    int wordCount = 0;
+    char *actualWord = strtok(command, " ");
+
+    while(actualWord != NULL){
+
+        cmd[wordCount] = malloc(MAXLENSTR * sizeof(char));
+        cmd[wordCount] = actualWord;
+        actualWord = strtok(NULL, " ");
+        wordCount++;
+    }
+
+    cmd[wordCount] = malloc(MAXLENSTR * sizeof(char));
+    cmd[wordCount] = NULL;
+
+    return cmd;
+}
 
 
 
-bool executeSingleCommand(char ***cmd){
+
+bool executeSingleCommand(char **cmd){
     //int old_stdout = dup(1);
-    bool isExternCommand = checkExternCommand(*(cmd)[0]);
+    bool isExternCommand = checkExternCommand(cmd[0]);
     child_pid = fork();
 
     if(child_pid<0){
@@ -198,7 +262,7 @@ bool executeSingleCommand(char ***cmd){
         if(!isExternCommand)
             dup2(fdOutput,1);
 
-        if(execvp(*(cmd)[0],*cmd)==-1){
+        if(execvp(cmd[0],cmd)==-1){
             fprintf(stderr,"%s\n",strerror(errno));
             exit(EXIT_FAILURE);
         }
@@ -208,12 +272,12 @@ bool executeSingleCommand(char ***cmd){
         char *buf = malloc(maxLength * sizeof(char));
 
         char *subCommand = malloc(MAXLENSTR *sizeof(char));
-        strcpy(subCommand,*(cmd)[0]);
+        strcpy(subCommand,cmd[0]);
         int i=1;
-        while((*cmd)[i]!=NULL){
+        while(cmd[i]!=NULL){
 
             strcat(subCommand," ");
-            strcat(subCommand,(*cmd)[i]);
+            strcat(subCommand,cmd[i]);
             i++;
         }
         if(returnCode==0){
@@ -229,11 +293,11 @@ bool executeSingleCommand(char ***cmd){
                 buf[0] = '\0';
             }
 
-            scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,WRITE_ON_OUTPUT);
+            scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
         }else{
             lseek(fdError,0,0);
             int buflen = myread(fdError,buf,maxLength);
-            scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,WRITE_ON_ERROR);
+            scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
         }
         free(buf);
         free(subCommand);
@@ -241,7 +305,6 @@ bool executeSingleCommand(char ***cmd){
     }
 
 }
-
 
 
 void executeWithPipe(char ***cmd){
@@ -309,13 +372,13 @@ void executeWithPipe(char ***cmd){
                     int buflen = myread(pToFile[READ],buf,maxLength);
                     //buf[buflen-1]  ='\0';
                     mywrite(pToChain[WRITE],buf,buflen);
-                    scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,WRITE_ON_OUTPUT);
+                    scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
                 }else{
                     mywrite(pToChain[WRITE],"\0",0);
                     lseek(fdError,0,0);
                     int buflen = myread(fdError,buf,maxLength);
                     buf[buflen-1]  ='\0';
-                    scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,WRITE_ON_ERROR);
+                    scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
                 }
                 myclose(pToChain[WRITE]);
                 nextInput = pToChain[READ];
@@ -326,14 +389,14 @@ void executeWithPipe(char ***cmd){
                     lseek(fdOutput,0,0);
                     int buflen = myread(fdOutput,buf,maxLength);
                     buf[buflen-1]  ='\0';
-                    scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,WRITE_ON_OUTPUT);
+                    scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
 
                 }else{
 
                     lseek(fdError,0,0);
                     int buflen = myread(fdError,buf,maxLength);
                     buf[buflen-1]  ='\0';
-                    scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,WRITE_ON_ERROR);
+                    scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
 
                 }
             }
@@ -343,6 +406,11 @@ void executeWithPipe(char ***cmd){
 
         free(subCommand);
     }
+}
+
+
+void executeWithRedirection(char ***command){
+
 }
 
 //print output to stdout
@@ -376,42 +444,56 @@ void printErrorFileToShell(){
 
 }
 
-bool changeDirectory(char ***cmd){
+bool changeDirectory(char **cmd){
     bool res =false;
     char *home="/home";
-    if(strcmp((*cmd)[0],"cd")==0){
+    if(strcmp(cmd[0],"cd")==0){
         res = true;
 
-        if((*cmd)[1]==NULL){
+        
+        if(cmd[1]==NULL){
             chdir(home);
+            return res;
 
-        }else if((strcmp((*cmd)[1], "~")==0) || (strcmp((*cmd)[1], "~/")==0)){
+        }
+
+        int i = 2;
+        char *path = malloc(MAXLENSTR * sizeof(char));
+        strcpy(path,cmd[1]);
+        while(cmd[i] != NULL){
+            
+            strcat(path," ");
+            strcat(path,cmd[i]);
+            i++;
+        }
+
+        if((strcmp(cmd[1], "~")==0) || (strcmp(cmd[1], "~/")==0)){
              chdir(home);
-        }else if(chdir((*cmd)[1])<0){
-            fprintf(stderr,"cd: %s: No such file or directory\n", (*cmd)[1]);
+        }else if(chdir(cmd[1])<0){
+            fprintf(stderr,"cd: %s: No such file or directory\n", path);
             returnCode=256;
         }
         char *buf = malloc(maxLength * sizeof(char));
         char *subCommand = malloc(MAXLENSTR *sizeof(char));
-        strcpy(subCommand,*(cmd)[0]);
-        int i=1;
-        while((*cmd)[i]!=NULL){
+        strcpy(subCommand,cmd[0]);
+        i=1;
+        while(cmd[i]!=NULL){
 
             strcat(subCommand," ");
-            strcat(subCommand,(*cmd)[i]);
+            strcat(subCommand,cmd[i]);
             i++;
         }
          if(returnCode==0){
 
                     
-                    scrivi(absoluteOutFilePath,formatoLog,"",subCommand,WRITE_ON_OUTPUT);
+                    scrivi(absoluteOutFilePath,formatoLog,"",subCommand,outFlag);
 
         }else{
 
             lseek(fdError,0,0);
             int buflen = myread(fdError,buf,maxLength);
             buf[buflen-1] = '\0';
-            scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,WRITE_ON_ERROR);
+            scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
         }
         free(buf);
         free(subCommand);
@@ -425,6 +507,18 @@ int main(int argc, char **argv){
     srand(time(NULL));
     commandId = 0;
     letturaParametriInput(argc,argv);
+
+    if(errfilePath==NULL || outfilePath ==NULL){
+        stampaHelp(true);
+        exit(EXIT_FAILURE);
+    }
+    if(strcmp(errfilePath,outfilePath)==0){
+        outFlag=WRITE_ON_OUTPUT;
+        errFlag=WRITE_ON_ERROR;
+    }else{
+        outFlag = DIFFERENT_LOG_FILES;
+        errFlag = DIFFERENT_LOG_FILES;
+    }
     signal(SIGINT,sigIntHandler);
     char *exitCommand ="quit";
     printf("%s",WELCOME);
@@ -488,6 +582,7 @@ int main(int argc, char **argv){
 
             //counting the number of pipes in the command
             int numberOfPipes = 0;
+            
             i=0;
             while(commandLine[i]!='\0' && i<MAXLENSTR){
 
@@ -497,21 +592,47 @@ int main(int argc, char **argv){
                 i++;
             }
             //printf("numberOfPipes: %d\n",numberOfPipes);
+            int numberOfRedirection  = 0;
+            i=0;
+            while(commandLine[i]!='\0' && i<MAXLENSTR){
 
-            // printf("%s\n",commandLine);
-            char ***splittedCommand = splitCommandLine(toSplitThisCommand);
-            // printf("%s\n",commandLine);
-
-            bool changedDirectory = changeDirectory(splittedCommand);
-
-            if(!changedDirectory){
-                if(numberOfPipes==0){
-
-                    executeSingleCommand(splittedCommand);
-                }else{
-                    executeWithPipe(splittedCommand);
+                if(commandLine[i]=='>'){
+                    numberOfRedirection+=1;
                 }
+                i++;
             }
+
+            // printf("%s\n",commandLine);
+            if(numberOfPipes == 0 && numberOfRedirection == 0){
+                char **splittedSingleCommand = splitCommandLineNoRedirection(toSplitThisCommand);
+                bool changedDirectory = changeDirectory(splittedSingleCommand);
+                if(!changedDirectory){
+                    executeSingleCommand(splittedSingleCommand);
+                }
+                
+                
+            }else if(numberOfPipes!=0 && numberOfRedirection==0){
+                
+                char ***splittedCommand = splitCommandLineWithPipes(toSplitThisCommand);
+                executeWithPipe(splittedCommand);
+                
+                
+
+            }else if(numberOfPipes == 0 && numberOfRedirection!=0){
+
+                char ***splittedCommand = splitCommandLineWithRedirection(toSplitThisCommand);
+                executeWithRedirection(splittedCommand);
+
+            }else{
+
+                fprintf(stderr,"This type of command is not supported\n");
+            }
+            // printf("%s\n",commandLine);
+                
+
+            
+
+            
             
 
 
