@@ -1,0 +1,4 @@
+cd
+history
+redrect
+alias
