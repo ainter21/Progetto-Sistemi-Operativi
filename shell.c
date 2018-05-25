@@ -14,17 +14,21 @@
 
 
 
-
+//used to alloc strings
 #define MAXLENSTR 256
+//max number of commands and arguments
 #define MAXCMDNUM 20
+//colors
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 #define ANSI_COLOR_BLUE    "\x1b[34m"
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
+//used in pipes for better understanding
 #define READ 0
 #define WRITE 1
+//welcome and goodbye text
 #define WELCOME "\x1b[33m   _____ _          _ _   _             __  __ _____  _____          \n  / ____| |        | | | | |           |  \\/  |  __ \\|  __ \\   /\\    \n | (___ | |__   ___| | | | |__  _   _  | \\  / | |  | | |  | | /  \\   \n  \\___ \\| '_ \\ / _ \\ | | | '_ \\| | | | | |\\/| | |  | | |  | |/ /\\ \\  \n  ____) | | | |  __/ | | | |_) | |_| | | |  | | |__| | |__| / ____ \\ \n |_____/|_| |_|\\___|_|_| |_.__/ \\__, | |_|  |_|_____/|_____/_/    \\_\\\n                                 __/ |                               \n                                |___/                                \n\n\x1b[0m"
 #define GOODBYE "\e[1;35m  ____                   \n |  _ \\                  \n | |_) |_   _  ___       \n |  _ <| | | |/ _ \\      \n | |_) | |_| |  __/_ _ _ \n |____/ \\__, |\\___(_|_|_)\n         __/ |           \n        |___/            \n\n\x1b[0m"
 //VARIABILI GLOBALI
@@ -37,9 +41,9 @@ int fdOutput;   //file descriptor to handle output
 int fdError;    //file descriptor to handle error
 pid_t child_pid = 0;    //process is of the child
 int returnCode;     //return code of the execution of the command
-int commandId;
-int outFlag;
-int errFlag;
+int commandId;  //incrementing integer indicating the id of the command(subCommand of the same cpmmand has the same commandid)
+int outFlag;    //variable used to set if the out file has the same name of the err file
+int errFlag;    //variable used to set if the err file has the same name of the out file
 
 //it get the start current working directory
 void takeStartCwd(){
@@ -56,6 +60,7 @@ char *createAbsolutePath(char *relativePath,char *absolutePath){
     strcat(absolutePath,relativePath);
 }
 
+//it controls if a command is interactive. Used to not dup the stdout in the exec function
 bool checkExternCommand(char * cmd){
 
     bool res = false;
@@ -85,6 +90,7 @@ bool checkExternCommand(char * cmd){
     return res;
     
 }
+//wrapper to write to log based on the format
 void scrivi(char *path,int format,char *output,char *subCommand,int writeFlag){
 
 
@@ -129,7 +135,7 @@ void printCwd(){
 
 
 }
-
+//it kills the child process if exists.
 void sigIntHandler(int signum){
 
     if(child_pid!=0)
@@ -145,7 +151,7 @@ void clearTmpFiles(){
     remove("/tmp/fdError");
     remove("/tmp/fdOutput");
 }
-
+//used to split commands with pipes. It creates a char *** that divides commands by pipe and by argument
 char ***splitCommandLineWithPipes(char* command){
 
     char ***cmd=malloc(MAXCMDNUM);
@@ -249,7 +255,7 @@ char **splitCommandLineNoRedirection(char *command){
 
 
 
-
+//used to execute a command with no piping or redirection
 bool executeSingleCommand(char **cmd){
     //int old_stdout = dup(1);
     bool isExternCommand = checkExternCommand(cmd[0]);
@@ -306,7 +312,7 @@ bool executeSingleCommand(char **cmd){
 
 }
 
-
+//used to execute command with piping 
 void executeWithPipe(char ***cmd){
 
 
@@ -408,7 +414,7 @@ void executeWithPipe(char ***cmd){
     }
 }
 
-
+//used to execute command with the > redirection command
 void executeWithRedirection(char ***command){
 
 }
@@ -444,6 +450,7 @@ void printErrorFileToShell(){
 
 }
 
+//it controls if the input is a cd command and it changes directory. It does not support folder with blank spaces
 bool changeDirectory(char **cmd){
     bool res =false;
     char *home="/home";
@@ -502,16 +509,20 @@ bool changeDirectory(char **cmd){
     return res;
 }
 
-
+//main 
 int main(int argc, char **argv){
     srand(time(NULL));
     commandId = 0;
+    //read input arguments
     letturaParametriInput(argc,argv);
 
+    //control if user foget to enter out or err file log
     if(errfilePath==NULL || outfilePath ==NULL){
         stampaHelp(true);
         exit(EXIT_FAILURE);
     }
+
+    //it sets the the flags if the out and err file are the same or not
     if(strcmp(errfilePath,outfilePath)==0){
         outFlag=WRITE_ON_OUTPUT;
         errFlag=WRITE_ON_ERROR;
@@ -519,10 +530,15 @@ int main(int argc, char **argv){
         outFlag = DIFFERENT_LOG_FILES;
         errFlag = DIFFERENT_LOG_FILES;
     }
+
+    //signal
     signal(SIGINT,sigIntHandler);
     char *exitCommand ="quit";
+
+    //prints the welcome string MDDA = Michele, Davide, Davide, Alberto, our names
     printf("%s",WELCOME);
-    //signal to stop child process
+    
+    //we need it to create absolute path
     takeStartCwd();
 
 
@@ -532,13 +548,14 @@ int main(int argc, char **argv){
     absoluteErrFilePath = malloc(MAXLENSTR * sizeof(char));
     createAbsolutePath(outfilePath,absoluteOutFilePath);
     createAbsolutePath(errfilePath,absoluteErrFilePath);
-    //printf("%s\n%s\n",absoluteOutFilePath,absoluteErrFilePath);
+    
 
-    //main loop
+    //while loop
 
 
     while(1){
         
+        //prints the shell info every cycle(shell: cwd$)
         printCwd();
         char *tmpCommandLine=malloc(MAXLENSTR * sizeof(char));
         commandLine = malloc(MAXLENSTR *sizeof(char));
@@ -561,18 +578,22 @@ int main(int argc, char **argv){
         }
         free(tmpCommandLine);
        
-        // printf("%s\n",commandLine);
         
+        //checks if command is not null
         if(commandLine[0]!='\0'){
             commandLine[j-1]='\0';
-            //printf("Entro qua\n");
-            //printf("%s\n",commandLine);
+            
             int len = strlen(commandLine);
+            //we will split this string
             char *toSplitThisCommand = malloc(MAXLENSTR * sizeof(char));
             strcpy(toSplitThisCommand,commandLine);
+
+            //we will use this fd as tmp output and error
             fdError = myopenwm("/tmp/fdError",O_RDWR|O_CREAT|O_TRUNC,0777);
             dup2(fdError,2);
             fdOutput = myopenwm("/tmp/fdOutput",O_RDWR|O_CREAT|O_TRUNC,0777);
+
+            //check if it is the quit command
             if(strcmp(commandLine,exitCommand)==0){
                 printf("%s",GOODBYE);
                 clearTmpFiles();
@@ -580,7 +601,7 @@ int main(int argc, char **argv){
                 exit(EXIT_SUCCESS);
             }
 
-            //counting the number of pipes in the command
+            //counts the number of pipes in the command
             int numberOfPipes = 0;
             
             i=0;
@@ -591,7 +612,7 @@ int main(int argc, char **argv){
                 }
                 i++;
             }
-            //printf("numberOfPipes: %d\n",numberOfPipes);
+            //counts the number of the redirection > command
             int numberOfRedirection  = 0;
             i=0;
             while(commandLine[i]!='\0' && i<MAXLENSTR){
@@ -601,8 +622,8 @@ int main(int argc, char **argv){
                 }
                 i++;
             }
-
-            // printf("%s\n",commandLine);
+            //this if controls if there are piping or redirection command and it calls different functions. This shell does not support bot redirection and piping. 
+            
             if(numberOfPipes == 0 && numberOfRedirection == 0){
                 char **splittedSingleCommand = splitCommandLineNoRedirection(toSplitThisCommand);
                 bool changedDirectory = changeDirectory(splittedSingleCommand);
@@ -627,7 +648,7 @@ int main(int argc, char **argv){
 
                 fprintf(stderr,"This type of command is not supported\n");
             }
-            // printf("%s\n",commandLine);
+            
                 
 
             
@@ -636,15 +657,16 @@ int main(int argc, char **argv){
             
 
 
-
+            //prints out and errors catched executing the commands.
             printOutputFileToShell();
             printErrorFileToShell();
 
-            //printf("%s\n",commandLine);
+            
             free(toSplitThisCommand);
         }
     
         free(commandLine);
+        //incrementing commandId
         commandId+=1;
     }
     

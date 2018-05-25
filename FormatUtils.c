@@ -176,7 +176,7 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
     //printf("\n\nTEST OUTPUT 2:\n%s\n%s\n", output, tempOutput);
 
     //Scrivo le statistiche sotto forma di tabella
-    char *str = malloc(2048 * sizeof(char));
+    char *str = malloc((1024 + strlen(output)) * sizeof(char));
 
     sprintf(str, "<tr><td>%i</td>", id);
 
