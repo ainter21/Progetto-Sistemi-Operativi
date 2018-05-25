@@ -17,7 +17,7 @@
 //used to alloc strings
 #define MAXLENSTR 256
 //max number of commands and arguments
-#define MAXCMDNUM 20
+#define MAXCMDNUM 64
 //colors
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
@@ -29,8 +29,8 @@
 #define READ 0
 #define WRITE 1
 //welcome and goodbye text
-#define WELCOME "\x1b[33m   _____ _          _ _   _             __  __ _____  _____          \n  / ____| |        | | | | |           |  \\/  |  __ \\|  __ \\   /\\    \n | (___ | |__   ___| | | | |__  _   _  | \\  / | |  | | |  | | /  \\   \n  \\___ \\| '_ \\ / _ \\ | | | '_ \\| | | | | |\\/| | |  | | |  | |/ /\\ \\  \n  ____) | | | |  __/ | | | |_) | |_| | | |  | | |__| | |__| / ____ \\ \n |_____/|_| |_|\\___|_|_| |_.__/ \\__, | |_|  |_|_____/|_____/_/    \\_\\\n                                 __/ |                               \n                                |___/                                \n\n\x1b[0m"
-#define GOODBYE "\e[1;35m  ____                   \n |  _ \\                  \n | |_) |_   _  ___       \n |  _ <| | | |/ _ \\      \n | |_) | |_| |  __/_ _ _ \n |____/ \\__, |\\___(_|_|_)\n         __/ |           \n        |___/            \n\n\x1b[0m"
+#define WELCOME "\e[1;93m   _____ _          _ _   _             __  __ _____  _____          \n  / ____| |        | | | | |           |  \\/  |  __ \\|  __ \\   /\\    \n | (___ | |__   ___| | | | |__  _   _  | \\  / | |  | | |  | | /  \\   \n  \\___ \\| '_ \\ / _ \\ | | | '_ \\| | | | | |\\/| | |  | | |  | |/ /\\ \\  \n  ____) | | | |  __/ | | | |_) | |_| | | |  | | |__| | |__| / ____ \\ \n |_____/|_| |_|\\___|_|_| |_.__/ \\__, | |_|  |_|_____/|_____/_/    \\_\\\n                                 __/ |                               \n                                |___/                                \n\n\x1b[0m"
+#define GOODBYE "\e[1;95m  ____                   \n |  _ \\                  \n | |_) |_   _  ___       \n |  _ <| | | |/ _ \\      \n | |_) | |_| |  __/_ _ _ \n |____/ \\__, |\\___(_|_|_)\n         __/ |           \n        |___/            \n\n\x1b[0m"
 //VARIABILI GLOBALI
 char startCwd[MAXLENSTR]; //starting current working directory
 char cwd[MAXLENSTR];    //current working directory
@@ -44,6 +44,24 @@ int returnCode;     //return code of the execution of the command
 int commandId;  //incrementing integer indicating the id of the command(subCommand of the same cpmmand has the same commandid)
 int outFlag;    //variable used to set if the out file has the same name of the err file
 int errFlag;    //variable used to set if the err file has the same name of the out file
+
+void takeStartCwd();
+char *createAbsolutePath(char *relativePath,char *absolutePath);
+bool checkExternCommand(char * cmd);
+bool checkExternCommand(char * cmd);
+void printCwd();
+void sigIntHandler(int signum);
+void sigIntHandler(int signum);
+void clearTmpFiles();
+char ***splitCommandLineWithPipes(char* command);
+char ***splitCommandLineWithRedirection(char* command);
+char **splitCommandLineNoRedirection(char *command);
+bool executeSingleCommand(char **cmd);
+void executeWithPipe(char ***cmd);
+void executeWithRedirection(char ***command);
+void printOutputFileToShell();
+void printErrorFileToShell();
+bool changeDirectory(char **cmd);
 
 //it get the start current working directory
 void takeStartCwd(){
@@ -141,15 +159,15 @@ void sigIntHandler(int signum){
     if(child_pid!=0)
         mykill(child_pid,SIGTERM);
     printf("\x1b[31mType 'quit' to terminate\n\x1b[0m");
-    // printCwd();
-    fflush(stdout);
+    printCwd();
+    myfflush(stdout);
 }
 //it closes tmp files
 void clearTmpFiles(){
-    close(fdOutput);
-    close(fdError);
-    remove("/tmp/fdError");
-    remove("/tmp/fdOutput");
+    myclose(fdOutput);
+    myclose(fdError);
+    myremove("/tmp/fdError");
+    myremove("/tmp/fdOutput");
 }
 //used to split commands with pipes. It creates a char *** that divides commands by pipe and by argument
 char ***splitCommandLineWithPipes(char* command){
@@ -259,11 +277,9 @@ char **splitCommandLineNoRedirection(char *command){
 bool executeSingleCommand(char **cmd){
     //int old_stdout = dup(1);
     bool isExternCommand = checkExternCommand(cmd[0]);
-    child_pid = fork();
+    child_pid = myfork();
 
-    if(child_pid<0){
-        exit(EXIT_FAILURE);
-    }else if(child_pid==0){
+    if(child_pid==0){
         
         if(!isExternCommand)
             dup2(fdOutput,1);
@@ -291,7 +307,7 @@ bool executeSingleCommand(char **cmd){
             
             
             if(!isExternCommand){
-                lseek(fdOutput,0,0);
+                mylseek(fdOutput,0,0);
                 int buflen = myread(fdOutput,buf,maxLength);
                 //printf("buflen: %d\n",buflen);
                 buf[buflen-1]='\0';
@@ -301,7 +317,7 @@ bool executeSingleCommand(char **cmd){
 
             scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
         }else{
-            lseek(fdError,0,0);
+            mylseek(fdError,0,0);
             int buflen = myread(fdError,buf,maxLength);
             scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
         }
@@ -381,7 +397,7 @@ void executeWithPipe(char ***cmd){
                     scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
                 }else{
                     mywrite(pToChain[WRITE],"\0",0);
-                    lseek(fdError,0,0);
+                    mylseek(fdError,0,0);
                     int buflen = myread(fdError,buf,maxLength);
                     buf[buflen-1]  ='\0';
                     scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
@@ -392,14 +408,14 @@ void executeWithPipe(char ***cmd){
             }else{
                  if(returnCode==0){
 
-                    lseek(fdOutput,0,0);
+                    mylseek(fdOutput,0,0);
                     int buflen = myread(fdOutput,buf,maxLength);
                     buf[buflen-1]  ='\0';
                     scrivi(absoluteOutFilePath,formatoLog,buf,subCommand,outFlag);
 
                 }else{
 
-                    lseek(fdError,0,0);
+                    mylseek(fdError,0,0);
                     int buflen = myread(fdError,buf,maxLength);
                     buf[buflen-1]  ='\0';
                     scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
@@ -417,36 +433,109 @@ void executeWithPipe(char ***cmd){
 //used to execute command with the > redirection command
 void executeWithRedirection(char ***command){
 
+    
+
+    char ***executable = command;
+    int lastFile = -1;
+    command++;
+
+    
+
+    int pForRedirect[2];
+    mypipe(pForRedirect);
+    child_pid = myfork();
+
+    if(child_pid==0){
+
+        myclose(pForRedirect[READ]);
+        dup2(pForRedirect[WRITE],1);
+
+        if(execvp((*executable)[0],*executable)==-1){
+                fprintf(stderr,"%s\n",strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+
+    }else{
+
+        wait(&returnCode);
+        myclose(pForRedirect[WRITE]);
+        char *subCommand = malloc(MAXLENSTR *sizeof(char));
+        strcpy(subCommand,*(executable)[0]);
+        int i=1;
+        while((*executable)[i]!=NULL){
+
+            strcat(subCommand," ");
+            strcat(subCommand,(*executable)[i]);
+            i++;
+        }
+        if(returnCode==0){
+            scrivi(absoluteOutFilePath, formatoLog,"\0",subCommand,outFlag);
+            
+            while(*command!=NULL){
+
+                int fd = myopenwm((*command)[0],O_RDWR|O_CREAT|O_TRUNC,0666);
+                if(*(command+1)==NULL){
+                    
+                   
+                    char *buf = malloc(maxLength * sizeof(char));
+                    int buflen=myread(pForRedirect[READ],buf,maxLength);
+                    mywrite(fd,buf,buflen);
+                    free(buf);
+                    
+                }
+                close(fd);
+                command++;
+            }
+        }else{
+            char *buf = malloc(maxLength * sizeof(char));
+            mylseek(fdError,0,0);
+            int buflen = myread(fdError,buf,maxLength);
+            buf[buflen-1]  ='\0';
+            scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);
+            free(buf);
+        }
+
+        free(subCommand);
+
+        myclose(pForRedirect[READ]);
+        
+        
+    }
+        
+    
+    
+
+
 }
 
 //print output to stdout
 void printOutputFileToShell(){
 
-    int fd = open("/tmp/fdOutput", O_RDONLY);
+    int fd = myopenwf("/tmp/fdOutput", O_RDONLY);
     char *buf = malloc(maxLength*sizeof(char));
     int buflen;
-    buflen = read(fd, buf, maxLength);
-    write(1, buf, buflen);
-    fflush(stdout); 
+    buflen = myread(fd, buf, maxLength);
+    mywrite(1, buf, buflen);
+    myfflush(stdout); 
     free(buf);
-    close(fd);
+    myclose(fd);
 
 }
 
 //print error to stderr
 void printErrorFileToShell(){
 
-    int fd = open("/tmp/fdError", O_RDONLY);
+    int fd = myopenwf("/tmp/fdError", O_RDONLY);
     char *buf = malloc(maxLength*sizeof(char));
     int buflen;
-    buflen = read(fd, buf, maxLength);
-    write(1,ANSI_COLOR_RED,5);
-    write(1, buf, buflen);
+    buflen = myread(fd, buf, maxLength);
+    mywrite(1,ANSI_COLOR_RED,5);
+    mywrite(1, buf, buflen);
     
-    fflush(stderr);
+    myfflush(stderr);
     
     free(buf);
-    close(fd);
+    myclose(fd);
 
 }
 
@@ -459,7 +548,7 @@ bool changeDirectory(char **cmd){
 
         
         if(cmd[1]==NULL){
-            chdir(home);
+            mychdir(home);
             return res;
 
         }
@@ -475,8 +564,8 @@ bool changeDirectory(char **cmd){
         }
 
         if((strcmp(cmd[1], "~")==0) || (strcmp(cmd[1], "~/")==0)){
-             chdir(home);
-        }else if(chdir(cmd[1])<0){
+            mychdir(home);
+        }else if(mychdir(cmd[1])<0){
             fprintf(stderr,"cd: %s: No such file or directory\n", path);
             returnCode=256;
         }
@@ -497,7 +586,7 @@ bool changeDirectory(char **cmd){
 
         }else{
 
-            lseek(fdError,0,0);
+            mylseek(fdError,0,0);
             int buflen = myread(fdError,buf,maxLength);
             buf[buflen-1] = '\0';
             scrivi(absoluteErrFilePath,formatoLog,buf,subCommand,errFlag);

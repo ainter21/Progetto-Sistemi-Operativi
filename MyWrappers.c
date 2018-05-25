@@ -66,16 +66,7 @@ int myopenwm(const char* pathname, int flags, mode_t mode){
    return retval;
 }
 
-void* mymalloc(size_t size){
-   void* retval;
 
-   retval = malloc(size);
-   if(retval == NULL){
-      perror("Error allocating the memory");
-   }
-
-   return retval;
-}
 
 ssize_t myread(int fd, void *buf, size_t count){
    ssize_t retval;
@@ -110,25 +101,6 @@ int myclose(int fd){
    return retval;
 }
 
-//Non usare per ora
-char* mystrtok(char *str, const char *delim){
-   char *retval;
-
-   retval = strtok(str, delim);
-   if(retval == NULL)
-      // fprintf(1, "No tokens left or found\n");
-   return retval;
-}
-
-//Non usare per ora
-char* mystrtok_r(char *str, const char *delim, char **saveptr){
-   char *retval;
-
-   retval = strtok_r(str, delim, saveptr);
-   if(retval == NULL)
-      // fprintf(1, "No tokens left or found\n");
-   return retval;
-}
 
 int mychdir(const char *path){
    int retval;
@@ -167,7 +139,7 @@ pid_t myfork(){
    return retval;
 }
 
-int dup(int oldfd){
+int mydup(int oldfd){
    int retval;
 
    retval = dup(oldfd);
@@ -178,17 +150,6 @@ int dup(int oldfd){
    return retval;
 }
 
-// //Errore
-// int dup2(int oldfd, int newfd){
-//    int retval;
-
-//    retval = dup2(oldfd, newfd);
-//    if(retval == -1){
-//       perror("Error duplicating2 the file descriptor");
-//    }
-
-//    return retval;
-// }
 
 int myremove(const char *filename){
    int retval, errnum;
