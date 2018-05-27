@@ -1,4 +1,0 @@
-cd
-history
-redrect
-alias
