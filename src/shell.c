@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <signal.h>
+#include <limits.h>
 #include "FunctionUtils.h"
 #include "FormatUtils.h"
 #include "MyWrappers.h"
@@ -514,7 +515,7 @@ void printOutputFileToShell(){
     int fd = myopenwf("/tmp/fdOutput", O_RDONLY);
     char *buf = malloc(maxLength*sizeof(char));
     int buflen;
-    buflen = myread(fd, buf, maxLength);
+    buflen = myread(fd, buf, INT_MAX);
     mywrite(1, buf, buflen);
     myfflush(stdout); 
     free(buf);
