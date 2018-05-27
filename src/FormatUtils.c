@@ -7,6 +7,7 @@
 
 #include "FormatUtils.h"
 #include "FunctionUtils.h"
+#include "MyWrappers.h"
 
 bool scriviSuTxt(char * outFile, int id, char * command, char * subcommand, char * output, int* returnCode, int writeFlag){
 
@@ -130,12 +131,12 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
         scrivereIntestazione = true;
 
         //Dato che il file non esiste, devo crearlo obbligatoriamente prima di aprirlo in lettura
-        FILE* fOut = fopen(outFile, "w");
+        FILE* fOut = myfopen(outFile, "w");
         if (fOut == NULL){
             return false;
         }
 
-        fclose(fOut);
+        myfclose(fOut);
     }
 
     //Apro il file in lettura/scrittura altrimenti la fseek non funziona (il file non viene sovrascritto)
@@ -149,7 +150,7 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
 
     //Mi sposto nel file alla posizione giusta sapendo la dimensione totale
     int dimensioneFile = getFileDim(fOut);
-    fseek(fOut, dimensioneFile - HTML_FILE_OFFSET, SEEK_SET);
+    myfseek(fOut, dimensioneFile - HTML_FILE_OFFSET, SEEK_SET);
 
     //printf("\n\nTEST OUTPUT 1:\n%s\n\n", output);
 
@@ -227,7 +228,7 @@ bool scriviSuHtml(char * outFile, int id, char * command, char * subcommand, cha
 
     strcat(str, "<div class='modal fade' id='");
     strcat(str, strID);
-    strcat(str, "'><div class='modal-dialog'><div class='modal-content'><div class='modal-header'>");
+    strcat(str, "'><div class='modal-dialog modal-lg'><div class='modal-content'><div class='modal-header'>");
     strcat(str, "<h4 class='modal-title'>Output</h4><button type='button' class='close' data-dismiss='modal'>&times;</button></div>");
     strcat(str, "<div class='modal-body'>");
     strcat(str, output);
@@ -286,7 +287,7 @@ void scriviHeaderHTML(FILE* file, int writeFlag){
 
     strcat(header, "<div class='container'>");
     strcat(header, "<h2 class='text-danger'>Log file shell custom</h2><br>");
-    strcat(header, "<table class='table table-striped table-bordered text-center'>");
+    strcat(header, "<table class='table table-striped table-bordered'>");
     strcat(header, "<thead><tr><th>ID</th>");
 
     if (writeFlag != DIFFERENT_LOG_FILES)
@@ -305,11 +306,11 @@ void scriviHeaderHTML(FILE* file, int writeFlag){
 int getFileDim(FILE* f){
 
     //Porto il cursore a fine file e chiamo ftell()
-    fseek(f, 0, SEEK_END);
-    int sz = ftell(f);
+    myfseek(f, 0, SEEK_END);
+    int sz = myftell(f);
 
     //Riporto il cursore a inizio file
-    fseek(f, 0, SEEK_SET);
+    myfseek(f, 0, SEEK_SET);
 
     return sz;
 }
