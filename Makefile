@@ -18,7 +18,7 @@ help: build
 	@echo
 
 build: clean
-	@gcc $(FLAGS) -o $(DIR)/$(EXE) src/shell.c src/FormatUtils.c src/FunctionUtils.c src/MyWrappers.c
+	@gcc $(FLAGS) -o $(DIR)/$(EXE) src/shell.c src/FormatUtils.c src/FunctionUtils.c src/MyWrappers.c src/SplitLines.c src/ExecuteCommands.c
 
 clean: check
 	@rm -f $(DIR)/*
