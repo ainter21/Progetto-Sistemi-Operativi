@@ -104,6 +104,9 @@ bool checkExternCommand(char * cmd){
     if(strcmp(cmd,"grep")==0){
          res =  true;
     }
+     if(strcmp(cmd,"less")==0){
+         res =  true;
+    }
     
 
     return res;
