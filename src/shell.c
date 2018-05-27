@@ -513,7 +513,7 @@ void executeWithRedirection(char ***command){
 void printOutputFileToShell(){
 
     int fd = myopenwf("/tmp/fdOutput", O_RDONLY);
-    char *buf = malloc(maxLength*sizeof(char));
+    char *buf = malloc(INT_MAX*sizeof(char));
     int buflen;
     buflen = myread(fd, buf, INT_MAX);
     mywrite(1, buf, buflen);
